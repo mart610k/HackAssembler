@@ -22,30 +22,4 @@ namespace HackAssembler
             }
         }
     }
-
-   public class Compiler
-    {
-        public string StripSinglelineComment(string input)
-        {
-            int index = input.IndexOf("//");
-            if(index != -1)
-            {
-                input = input.Substring(0, index).Trim();
-            }
-            return input;
-        }
-        public string CompileCode(string input)
-        {
-            input =  StripSinglelineComment(input);
-
-
-            return input;
-        }
-
-        public string EncodeAddressLine(string input)
-        {
-
-        }
-
-    }
 }
