@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.32106.194
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HackAssembler", "HackAssembler\HackAssembler.csproj", "{60F0EC63-B293-4F9A-8DC0-D5307F106470}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HackAssemblerTest", "HackAssemblerTest\HackAssemblerTest.csproj", "{71F185BE-9F84-4C57-8F69-BA82E024B616}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{60F0EC63-B293-4F9A-8DC0-D5307F106470}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{60F0EC63-B293-4F9A-8DC0-D5307F106470}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{60F0EC63-B293-4F9A-8DC0-D5307F106470}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{60F0EC63-B293-4F9A-8DC0-D5307F106470}.Release|Any CPU.Build.0 = Release|Any CPU
+		{71F185BE-9F84-4C57-8F69-BA82E024B616}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{71F185BE-9F84-4C57-8F69-BA82E024B616}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{71F185BE-9F84-4C57-8F69-BA82E024B616}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{71F185BE-9F84-4C57-8F69-BA82E024B616}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {126942A6-724D-4C5A-8F24-F175E4A75A74}
+	EndGlobalSection
+EndGlobal
