@@ -67,5 +67,81 @@ namespace HackAssembler
             }
             return input;
         }
+
+        /// <summary>
+        /// Encode the given Input into machine code
+        /// </summary>
+        /// <param name="input">the statement to convert</param>
+        /// <returns>returning machine code</returns>
+        public string EncodeCInstruction(string input)
+        {
+            string jumpCodeBinary = "000";
+            int simicolonIndex = input.IndexOf(";");
+
+            if (simicolonIndex != -1)
+            {
+                string jumpInstruction = input.Substring(simicolonIndex + 1).Trim().ToLower();
+
+                switch (jumpInstruction)
+                {
+                    case "jgt":
+                        jumpCodeBinary = "001";
+                        break;
+                    case "jeq":
+                        jumpCodeBinary = "010";
+                        break;
+                    case "jge":
+                        jumpCodeBinary = "011";
+                        break;
+                    case "jlt":
+                        jumpCodeBinary = "100";
+                        break;
+                    case "jne":
+                        jumpCodeBinary = "101";
+                        break;
+                    case "jle":
+                        jumpCodeBinary = "110";
+                        break;
+                    case "jmp":
+                        jumpCodeBinary = "111";
+                        break;
+                    default:
+                        jumpCodeBinary = "000";
+                        break;
+                }
+            }
+
+            string destcodeBinary = "000";
+
+            int equalsignLocation = input.IndexOf("=");
+
+            if(equalsignLocation != -1)
+            {
+                string destinations = input.Substring(0, equalsignLocation).ToLower();
+                byte destinationBytes = 0;
+
+                if (destinations.Contains("a"))
+                {
+                    destinationBytes = (byte)(destinationBytes + 4); 
+                }
+                
+                if(destinations.Contains("m"))
+                {
+                    destinationBytes = (byte)(destinationBytes + 1);
+
+                }
+
+                if (destinations.Contains("d"))
+                {
+                    destinationBytes = (byte)(destinationBytes + 2);
+                }
+
+                destcodeBinary = Convert.ToString(destinationBytes, 2).PadLeft(3,'0');
+            }
+
+            string bytestring = destcodeBinary + jumpCodeBinary;
+
+            return bytestring.PadLeft(16,'0');
+        }
     }
 }
