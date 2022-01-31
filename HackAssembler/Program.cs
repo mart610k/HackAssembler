@@ -39,6 +39,12 @@ namespace HackAssembler
             }
             return input;
         }
+
+        /// <summary>
+        /// Main entry point for processing all compling the code into a binary format for each line
+        /// </summary>
+        /// <param name="input">the instruction being sent in</param>
+        /// <returns>the binary code it results in</returns>
         public string CompileCode(string input)
         {
             input =  StripSinglelineComment(input);
@@ -47,6 +53,12 @@ namespace HackAssembler
             return input;
         }
 
+
+        /// <summary>
+        /// Encodes the Address into an address range the machine code accepts
+        /// </summary>
+        /// <param name="input">address liked code</param>
+        /// <returns>address in binary format</returns>
         public string EncodeAddressLine(string input)
         {
             int index = input.IndexOf("@");
