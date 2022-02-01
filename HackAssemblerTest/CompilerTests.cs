@@ -95,5 +95,82 @@ namespace HackAssemblerTest
 
             Assert.AreEqual(expectedbytes, byteCodes);
         }
+
+        [TestCase("0=0", "0","101010")]
+        [TestCase("0=1", "0","111111")]
+        [TestCase("0=-1", "0","111010")]
+        [TestCase("0=D", "0","001100")]
+        [TestCase("0=A", "0","110000")]
+        [TestCase("0=M","1","110000")]
+        [TestCase("0=!D", "0", "001101")]
+        [TestCase("0=!A", "0","110001")]
+        [TestCase("0=!M", "1","110001")]
+        [TestCase("0=-D", "0", "001111")]
+        [TestCase("0=-A", "0","110011")]
+        [TestCase("0=-M", "1","110011")]
+        [TestCase("0=D+1", "0", "011111")]
+        [TestCase("0=A+1", "0","110111")]
+        [TestCase("0=M+1", "1","110111")]
+        [TestCase("0=D-1", "0", "001110")]
+        [TestCase("0=A-1", "0","110010")]
+        [TestCase("0=M-1", "1","110010")]
+        [TestCase("0=D+A", "0","000010")]
+        [TestCase("0=D+M", "1","000010")]
+        [TestCase("0=D-A", "0","010011")]
+        [TestCase("0=D-M", "1","010011")]
+        [TestCase("0=A-D", "0","000111")]
+        [TestCase("0=M-D", "1","000111")]
+        [TestCase("0=D&A", "0","000000")]
+        [TestCase("0=D&M", "1","000000")]
+        [TestCase("0=D|A", "0","010101")]
+        [TestCase("0=D|M", "1","010101")]
+        public void CheckABitInstructionCode(string instruction, string expectedABit, string expectedInstruction)
+        {
+            Compiler compiler = new Compiler();
+
+            string encodedEnstruction = compiler.EncodeCInstruction(instruction);
+
+            if (encodedEnstruction.Length != 16)
+            {
+                Assert.Fail("output was not 16 characters long");
+            }
+
+            string actualABit = encodedEnstruction.Substring(3,1);
+
+            string actualInstruction = encodedEnstruction.Substring(4, 6);
+
+            Assert.AreEqual(expectedABit, actualABit);
+            Assert.AreEqual(expectedInstruction, actualInstruction);
+
+        }
+
+
+        [TestCase("A=M")]
+        [TestCase("A=-1")]
+        [TestCase("M=0")]
+        [TestCase("AMD=1")]
+        [TestCase("D=M+1")]
+        [TestCase("M=M+1")]
+        [TestCase("M=!A")]
+        [TestCase("0=D")]
+
+        public void StartingCEnstructionsPrefixedBits(string input)
+        {
+            Compiler compiler = new Compiler();
+
+            string encodedEnstruction = compiler.EncodeCInstruction(input);
+
+            if (encodedEnstruction.Length != 16)
+            {
+                Assert.Fail("output was not 16 characters long");
+            }
+
+            string startingbits = encodedEnstruction.Substring(0, 3);
+
+            Assert.AreEqual("111", startingbits);
+        }
+
+        
+
     }
 }
