@@ -484,33 +484,54 @@ namespace HackAssembler
         {
             codeLines = StripCommentsAndEmptyLines(codeLines);
 
-            List<string> parsedLabels = ParseLabelsInCode(codeLines);
+            codeLines = ParseLabelsInCode(codeLines);
 
-            List<string> registeredAddressForLabels = new List<string>();
+            codeLines = ConvertAllAddressLineLabelsToAddresses(codeLines);
 
-            for (int i = 0; i < parsedLabels.Count; i++)
-            {
-                registeredAddressForLabels.Add(ConvertAddressLineLabelToAddress(parsedLabels[i]));
-            }
-
-            for (int i = 0; i < registeredAddressForLabels.Count; i++)
-            {
-                RegisterCustomAddressLabel(registeredAddressForLabels[i]);
-            }
-            List<string> addressCoded = new List<string>();
-
-            for (int i = 0; i < registeredAddressForLabels.Count; i++)
-            {
-                addressCoded.Add(ConvertAddressVariablesToAddress(registeredAddressForLabels[i]));
-            }
-            List<string> binaryEncoded = new List<string>();
-            for (int i = 0; i < addressCoded.Count; i++)
-            {
-                binaryEncoded.Add(CompileSingleLineCode(addressCoded[i]));
-
-            }
+            codeLines = ConvertAllAddressLabelsToAddressPointers(codeLines);
            
-            return binaryEncoded;
+            return ConvertRawCodeToBinary(codeLines);
+        }
+
+        private List<string> ConvertAllAddressLineLabelsToAddresses(List<string> codeLines)
+        {
+            List<string> convertedLines = new List<string>();
+
+
+            for (int i = 0; i < codeLines.Count; i++)
+            {
+                convertedLines.Add(ConvertAddressLineLabelToAddress(codeLines[i]));
+            }
+
+            return convertedLines;
+        }
+
+        private List<string> ConvertAllAddressLabelsToAddressPointers(List<string> codeLines)
+        {
+            List<string> convertedLines = new List<string>();
+
+            for (int i = 0; i < codeLines.Count; i++)
+            {
+                RegisterCustomAddressLabel(codeLines[i]);
+            }
+
+            for (int i = 0; i < codeLines.Count; i++)
+            {
+                convertedLines.Add(ConvertAddressVariablesToAddress(codeLines[i]));
+            }
+            return convertedLines;
+        }
+
+        private List<string> ConvertRawCodeToBinary(List<string> codeLines)
+        {
+            List<string> convertedLines = new List<string>();
+
+            for (int i = 0; i < codeLines.Count; i++)
+            {
+                convertedLines.Add(CompileSingleLineCode(codeLines[i]));
+            }
+
+            return convertedLines;
         }
     }
 }
