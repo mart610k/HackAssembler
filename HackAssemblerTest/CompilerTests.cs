@@ -1,5 +1,6 @@
 using NUnit.Framework;
 using HackAssembler;
+using System.Collections.Generic;
 
 namespace HackAssemblerTest
 {
@@ -170,7 +171,169 @@ namespace HackAssemblerTest
             Assert.AreEqual("111", startingbits);
         }
 
+
+        [TestCase("A=1 //Comment", "1110111111100000")]
+        [TestCase("@2 //DefaultLocation Memory", "0000000000000010")]
+        [TestCase("@100 //Very Important Location", "0000000001100100")]
+        [TestCase("AMD=0", "1110101010111000")]
+        [TestCase("@162", "0000000010100010")]
+        [TestCase("0;JMP", "1110101010000111")]
+        [TestCase("//EMPTYLine should return no bits", "")]
+        [TestCase("", "")]
+
+        public void SampleInstructionsEncodedCorrectlySomeComments(string input, string expectedBits)
+        {
+            Compiler compiler = new Compiler();
+
+            string actualByteCode = compiler.CompileSingleLineCode(input);
+
+            Assert.AreEqual(expectedBits, actualByteCode);
+        }
+
+        [Test]
+        public void RemoveAllEmptyLinesAndComments()
+        {
+            List<string> codeLines = new List<string>() { "         //Starting comment","//Another starting comment","", "          @0 //AddressLine With comment", "D=M-1", "@510 //Address location for stats","//This will not do much but is a comment", "A=M", "0; JMP //End of the program"};
+            List<string> expectedLines = new List<string>() { "@0", "D=M-1", "@510", "A=M", "0; JMP" };
+
+            Compiler compiler = new Compiler();
+
+
+            List<string> actualLines = compiler.StripCommentsAndEmptyLines(codeLines);
+
+
+            Assert.AreEqual(expectedLines, actualLines);
+
+        }
+
+        [Test]
+        public void ParseLabelsFromAssembly()
+        {
+            List<string> codeLines = new List<string>() { "@0", "(START)","D=M-1", "@510", "A=M", "@START", "A; JEQ","@2","(DOSOMETHING)", "@41", "A=A-1; JGT ","(END)","@END","0; JMP" };
+            List<string> expectedLines = new List<string>() { "@0", "D=M-1", "@510", "A=M", "@START", "A; JEQ", "@2", "@41", "A=A-1; JGT ", "@END", "0; JMP" };
+
+            Dictionary<string, int> expectedlabels = new Dictionary<string, int>() { ["START"] = 1, ["DOSOMETHING"] = 7, ["END"]= 9 };
+
+            Compiler compiler = new Compiler();
+
+            List<string> actualLines = compiler.ParseLabelsInCode(codeLines);
+
+            Assert.AreEqual(expectedlabels, compiler.UserDefinedLabels);
+            Assert.AreEqual(expectedLines, actualLines);
+
+        }
+
+        [TestCase("@LABEL", "@4")]
+        [TestCase("@START", "@25")]
+        [TestCase("@END", "@61")]
+        [TestCase("@BEGINING", "@91")]
+        [TestCase("@COMPARE", "@81")]
+        [TestCase("@NEGATE", "@14")]
+        [TestCase("@BABAISYOU", "@50")]
+        public void ParseLabelAddressesAndConvertThem(string input, string expected)
+        {
+            Compiler compiler = new Compiler(new Dictionary<string, int>() { ["LABEL"] = 4, ["START"] = 25, ["END"] = 61, ["BEGINING"] = 91, ["COMPARE"] = 81, ["NEGATE"] = 14, ["BABAISYOU"] = 50 });
+
+            string actual = compiler.ConvertAddressLineLabelToAddress(input);
+
+            Assert.AreEqual(expected, actual);
+
+        }
+
         
+        [TestCase("@Address", "Address")]
+        [TestCase("@Test", "Test")]
+        [TestCase("@Mess","Mess")]
+        [TestCase("@i", "i")]
+        [TestCase("@ADWE","ADWE")]
+        [TestCase("@Teama","Teama")]
+        [TestCase("@Scorpio","Scorpio")]
+        public void RegisterSingleAddressAsValue(string input,string expected)
+        {
+            Compiler compiler = new Compiler();
+
+            compiler.RegisterAddressLabel(input);
+
+            Dictionary<string,int> actual = compiler.AddressLabels;
+
+            Assert.True(actual.ContainsKey(expected));
+        }
+
+
+        [Test]
+        public void CheckAllExpectedDeterminedAddresValues()
+        {
+            Compiler compiler = new Compiler();
+
+            compiler.RegisterDeterminedAddressValues();
+
+            Dictionary<string, int> preDeterminedAddressValues = new Dictionary<string, int>();
+            preDeterminedAddressValues.Add("R0", 0);
+            preDeterminedAddressValues.Add("R1", 1);
+            preDeterminedAddressValues.Add("R2", 2);
+            preDeterminedAddressValues.Add("R3", 3);
+            preDeterminedAddressValues.Add("R4", 4);
+            preDeterminedAddressValues.Add("R5", 5);
+            preDeterminedAddressValues.Add("R6", 6);
+            preDeterminedAddressValues.Add("R7", 7);
+            preDeterminedAddressValues.Add("R8", 8);
+            preDeterminedAddressValues.Add("R9", 9);
+            preDeterminedAddressValues.Add("R10", 10);
+            preDeterminedAddressValues.Add("R11", 11);
+            preDeterminedAddressValues.Add("R12", 12);
+            preDeterminedAddressValues.Add("R13", 13);
+            preDeterminedAddressValues.Add("R14", 14);
+            preDeterminedAddressValues.Add("R15", 15);
+            preDeterminedAddressValues.Add("SP", 0);
+            preDeterminedAddressValues.Add("LCL", 1);
+            preDeterminedAddressValues.Add("ARG", 2);
+            preDeterminedAddressValues.Add("THIS", 3);
+            preDeterminedAddressValues.Add("THAT", 4);
+            preDeterminedAddressValues.Add("SCREEN", 16384);
+            preDeterminedAddressValues.Add("KEYBOARD", 24576);
+
+            foreach(string key in preDeterminedAddressValues.Keys)
+            {
+
+                Assert.AreEqual(preDeterminedAddressValues[key], compiler.AddressLabels[key]);
+            }
+
+
+
+        }
+
+        [TestCase("R0", 0)]
+        [TestCase("R1", 1)]
+        [TestCase("R2", 2)]
+        [TestCase("R3", 3)]
+        [TestCase("R4", 4)]
+        [TestCase("R5", 5)]
+        [TestCase("R6", 6)]
+        [TestCase("R7", 7)]
+        [TestCase("R8", 8)]
+        [TestCase("R9", 9)]
+        [TestCase("R10", 10)]
+        [TestCase("R11", 11)]
+        [TestCase("R12", 12)]
+        [TestCase("R13", 13)]
+        [TestCase("R14", 14)]
+        [TestCase("R15", 15)]
+        [TestCase("SP", 0)]
+        [TestCase("LCL", 1)]
+        [TestCase("ARG", 2)]
+        [TestCase("THIS", 3)]
+        [TestCase("THAT", 4)]
+        [TestCase("SCREEN", 16384)]
+        [TestCase("KEYBOARD", 24576)]
+        public void TestIndivdualPredeterminedAddresses(string name, int expectedAddress)
+        {
+            Compiler compiler = new Compiler();
+
+            compiler.RegisterDeterminedAddressValues();
+
+            Assert.AreEqual(expectedAddress, compiler.AddressLabels[name]);
+        }
+
 
     }
 }

@@ -1,9 +1,31 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace HackAssembler
 {
     public class Compiler
     {
+        public Dictionary<string, int> UserDefinedLabels { get; private set; }
+        public Dictionary<string, int> AddressLabels { get; set; }
+
+        public Compiler()
+        {
+            UserDefinedLabels = new Dictionary<string, int>();
+            AddressLabels = new Dictionary<string, int>();
+        }
+
+        /// <summary>
+        /// Primaily meant for testing to set the Dictionary into the the right state
+        /// </summary>
+        /// <param name="predeterminedLabels"></param>
+        public Compiler(Dictionary<string, int> predeterminedLabels)
+        {
+            UserDefinedLabels = predeterminedLabels;
+            AddressLabels = new Dictionary<string, int>();
+        }
+
         /// <summary>
         /// Strips away single line comments from the code. wether or not they are located in the same line as an instruction or are exclusively for that line.
         /// </summary>
@@ -19,19 +41,33 @@ namespace HackAssembler
             return input;
         }
 
+
         /// <summary>
         /// Main entry point for processing all compling the code into a binary format for each line
         /// </summary>
         /// <param name="input">the instruction being sent in</param>
         /// <returns>the binary code it results in</returns>
-        public string CompileCode(string input)
+        public string CompileSingleLineCode(string input)
         {
-            input =  StripSinglelineComment(input);
+            string instructionBytes;
 
+            input = StripSinglelineComment(input);
+            if(input.Length == 0)
+            {
+                return "";
+            }
 
-            return input;
+            if (input.StartsWith("@"))
+            {
+                instructionBytes = EncodeAddressLine(input);
+            }
+            else
+            {
+                instructionBytes = EncodeCInstruction(input);
+            }
+
+            return instructionBytes;
         }
-
 
         /// <summary>
         /// Encodes the Address into an address range the machine code accepts
@@ -76,7 +112,7 @@ namespace HackAssembler
         public string EncodeCInstruction(string input)
         {
             string ainstructionBinary = "0";
-            string controlBitInstructions = "000000";
+            string controlBitInstructions = "101010";
 
             string destcodeBinary = "000";
 
@@ -108,31 +144,70 @@ namespace HackAssembler
         }
 
         /// <summary>
-        /// Decode the bits that are related to where the result should be stored
+        /// Parses the labels and strips the labels out from the assembly code saving labels and ROM addresses as a dictionary
         /// </summary>
-        /// <param name="destinations">input string containing the save location(s)</param>
-        /// <returns>the bits required to save the result</returns>
-        private string DecodeDestBits(string destinations)
+        /// <param name="codeLines">the codelines to process</param>
+        /// <returns>codelines input with the labels stripped out</returns>
+        public List<string> ParseLabelsInCode(List<string> codeLines)
         {
-            byte destinationBytes = 0;
-
-            if (destinations.Contains("a"))
+            List<string> returningCode = new List<string>();
+            int currentROMAddress = 0;
+            for (int i = 0; i < codeLines.Count; i++)
             {
-                destinationBytes = (byte)(destinationBytes + 4);
+                if (codeLines[i].StartsWith("("))
+                {
+                    string parsedLabelName = codeLines[i].Trim(new char[] { '(', ')' });
+                    UserDefinedLabels.Add(parsedLabelName, currentROMAddress);
+                }
+                else
+                {
+                    currentROMAddress++;
+                    returningCode.Add(codeLines[i]);
+                }
+            }
+            return returningCode;
+        }
+
+        /// <summary>
+        /// Converts a Label address into a real numeric address
+        /// </summary>
+        /// <param name="input">line to convert</param>
+        /// <returns>The address based instruction</returns>
+        public string ConvertAddressLineLabelToAddress(string input)
+        {
+            if (!input.StartsWith("@"))
+            {
+                return input;
+            }
+            if (!Regex.IsMatch(input, "@^[0-9]*$"))
+            {
+                string label = input.Substring(1);
+                return  "@" +  UserDefinedLabels[label];
             }
 
-            if (destinations.Contains("d"))
+            return input;
+        }
+
+        /// <summary>
+        /// Strips all comments, whitespaces and empty lines from the incoming code leaving only the assmby code 
+        /// </summary>
+        /// <param name="codeLines">The code lines to strip</param>
+        /// <returns>Resulting list over what instructions should be run through.</returns>
+        public List<string> StripCommentsAndEmptyLines(List<string> codeLines)
+        {
+            List<string> remainingLines = new List<string>();
+            for (int i = 0; i < codeLines.Count; i++)
             {
-                destinationBytes = (byte)(destinationBytes + 2);
+                string strippedComment = StripSinglelineComment(codeLines[i]);
+                strippedComment = strippedComment.Trim();
+
+                if(strippedComment.Length != 0)
+                {
+                    remainingLines.Add(strippedComment);
+                }
             }
 
-            if (destinations.Contains("m"))
-            {
-                destinationBytes = (byte)(destinationBytes + 1);
-
-            }
-
-            return Convert.ToString(destinationBytes, 2).PadLeft(3, '0');
+            return remainingLines;
         }
 
         /// <summary>
@@ -214,6 +289,95 @@ namespace HackAssembler
             }
 
             return controlBitInstructions;
+        }
+
+        public void RegisterAddressLabel(string input)
+        {
+            int lowestIntFound = 0;
+
+            if(input.StartsWith("@")){
+                input = input.Substring(1);
+                if (!AddressLabels.ContainsKey(input))
+                {
+
+                    List<int> values = AddressLabels.Values.ToList();
+                    values.Sort();
+
+                    foreach (int item in values)
+                    {
+                        if(lowestIntFound < item && lowestIntFound == item - 1)
+                        {
+                            lowestIntFound = item;
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                    AddressLabels.Add(input, lowestIntFound);
+                }
+
+            }
+            
+
+
+        }
+
+        /// <summary>
+        /// Decode the bits that are related to where the result should be stored
+        /// </summary>
+        /// <param name="destinations">input string containing the save location(s)</param>
+        /// <returns>the bits required to save the result</returns>
+        private string DecodeDestBits(string destinations)
+        {
+            byte destinationBytes = 0;
+
+            if (destinations.Contains("a"))
+            {
+                destinationBytes = (byte)(destinationBytes + 4);
+            }
+
+            if (destinations.Contains("d"))
+            {
+                destinationBytes = (byte)(destinationBytes + 2);
+            }
+
+            if (destinations.Contains("m"))
+            {
+                destinationBytes = (byte)(destinationBytes + 1);
+
+            }
+
+            return Convert.ToString(destinationBytes, 2).PadLeft(3, '0');
+        }
+
+        public void RegisterDeterminedAddressValues()
+        {
+
+            AddressLabels.Add("R0", 0);
+            AddressLabels.Add("R1", 1);
+            AddressLabels.Add("R2", 2);
+            AddressLabels.Add("R3", 3);
+            AddressLabels.Add("R4", 4);
+            AddressLabels.Add("R5", 5);
+            AddressLabels.Add("R6", 6);
+            AddressLabels.Add("R7", 7);
+            AddressLabels.Add("R8", 8);
+            AddressLabels.Add("R9", 9);
+            AddressLabels.Add("R10", 10);
+            AddressLabels.Add("R11", 11);
+            AddressLabels.Add("R12", 12);
+            AddressLabels.Add("R13", 13);
+            AddressLabels.Add("R14", 14);
+            AddressLabels.Add("R15", 15);
+            AddressLabels.Add("SP", 0);
+            AddressLabels.Add("LCL", 1);
+            AddressLabels.Add("ARG", 2);
+            AddressLabels.Add("THIS", 3);
+            AddressLabels.Add("THAT", 4);
+            AddressLabels.Add("SCREEN", 16384);
+            AddressLabels.Add("KEYBOARD", 24576);
+
         }
 
         /// <summary>

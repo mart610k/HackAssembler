@@ -13,7 +13,7 @@ namespace HackAssembler
             StreamReader streamReader = new StreamReader(fileStream);
             while (!streamReader.EndOfStream)
             {
-                string result = compiler.CompileCode(streamReader.ReadLine());
+                string result = compiler.CompileSingleLineCode(streamReader.ReadLine());
                 if (result.Length != 0)
                 {
                     Console.WriteLine(result);
