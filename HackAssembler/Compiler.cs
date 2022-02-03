@@ -8,12 +8,19 @@ namespace HackAssembler
     public class Compiler
     {
         public Dictionary<string, int> UserDefinedLabels { get; private set; }
+
+        public Dictionary<string, int> PreDefinedAddressLabels { get; private set; }
+
         public Dictionary<string, int> AddressLabels { get; set; }
+
+        int CurrentCustomAddress = 16;
 
         public Compiler()
         {
             UserDefinedLabels = new Dictionary<string, int>();
             AddressLabels = new Dictionary<string, int>();
+            PreDefinedAddressLabels = new Dictionary<string, int>();
+            RegisterDeterminedAddressValues();
         }
 
         /// <summary>
@@ -24,6 +31,8 @@ namespace HackAssembler
         {
             UserDefinedLabels = predeterminedLabels;
             AddressLabels = new Dictionary<string, int>();
+            PreDefinedAddressLabels = new Dictionary<string, int>();
+            RegisterDeterminedAddressValues();
         }
 
         /// <summary>
@@ -40,6 +49,7 @@ namespace HackAssembler
             }
             return input;
         }
+
 
 
         /// <summary>
@@ -182,7 +192,10 @@ namespace HackAssembler
             if (!Regex.IsMatch(input, "@^[0-9]*$"))
             {
                 string label = input.Substring(1);
-                return  "@" +  UserDefinedLabels[label];
+                if (UserDefinedLabels.ContainsKey(label))
+                {
+                    return  "@" +  UserDefinedLabels[label];
+                }
             }
 
             return input;
@@ -305,7 +318,7 @@ namespace HackAssembler
 
                     foreach (int item in values)
                     {
-                        if(lowestIntFound < item && lowestIntFound == item - 1)
+                        if(lowestIntFound <= item || (lowestIntFound <= item && lowestIntFound == item - 1))
                         {
                             lowestIntFound = item;
                         }
@@ -351,34 +364,75 @@ namespace HackAssembler
             return Convert.ToString(destinationBytes, 2).PadLeft(3, '0');
         }
 
-        public void RegisterDeterminedAddressValues()
+        private void RegisterDeterminedAddressValues()
         {
 
-            AddressLabels.Add("R0", 0);
-            AddressLabels.Add("R1", 1);
-            AddressLabels.Add("R2", 2);
-            AddressLabels.Add("R3", 3);
-            AddressLabels.Add("R4", 4);
-            AddressLabels.Add("R5", 5);
-            AddressLabels.Add("R6", 6);
-            AddressLabels.Add("R7", 7);
-            AddressLabels.Add("R8", 8);
-            AddressLabels.Add("R9", 9);
-            AddressLabels.Add("R10", 10);
-            AddressLabels.Add("R11", 11);
-            AddressLabels.Add("R12", 12);
-            AddressLabels.Add("R13", 13);
-            AddressLabels.Add("R14", 14);
-            AddressLabels.Add("R15", 15);
-            AddressLabels.Add("SP", 0);
-            AddressLabels.Add("LCL", 1);
-            AddressLabels.Add("ARG", 2);
-            AddressLabels.Add("THIS", 3);
-            AddressLabels.Add("THAT", 4);
-            AddressLabels.Add("SCREEN", 16384);
-            AddressLabels.Add("KEYBOARD", 24576);
+            PreDefinedAddressLabels.Add("R0", 0);
+            PreDefinedAddressLabels.Add("R1", 1);
+            PreDefinedAddressLabels.Add("R2", 2);
+            PreDefinedAddressLabels.Add("R3", 3);
+            PreDefinedAddressLabels.Add("R4", 4);
+            PreDefinedAddressLabels.Add("R5", 5);
+            PreDefinedAddressLabels.Add("R6", 6);
+            PreDefinedAddressLabels.Add("R7", 7);
+            PreDefinedAddressLabels.Add("R8", 8);
+            PreDefinedAddressLabels.Add("R9", 9);
+            PreDefinedAddressLabels.Add("R10", 10);
+            PreDefinedAddressLabels.Add("R11", 11);
+            PreDefinedAddressLabels.Add("R12", 12);
+            PreDefinedAddressLabels.Add("R13", 13);
+            PreDefinedAddressLabels.Add("R14", 14);
+            PreDefinedAddressLabels.Add("R15", 15);
+            PreDefinedAddressLabels.Add("SP", 0);
+            PreDefinedAddressLabels.Add("LCL", 1);
+            PreDefinedAddressLabels.Add("ARG", 2);
+            PreDefinedAddressLabels.Add("THIS", 3);
+            PreDefinedAddressLabels.Add("THAT", 4);
+            PreDefinedAddressLabels.Add("SCREEN", 16384);
+            PreDefinedAddressLabels.Add("KEYBOARD", 24576);
 
         }
+
+        public string ConvertAddressVariablesToAddress(string v)
+        {
+            if (v.StartsWith("@"))
+            {
+                string temp = v.Substring(1);
+                if(!Regex.IsMatch(temp, "^[0-9]*$"))
+                {
+
+                    if (PreDefinedAddressLabels.ContainsKey(temp))
+                    {
+                        return "@" + PreDefinedAddressLabels[temp];
+                    }
+                    return "@" + AddressLabels[temp];
+                }
+            }
+            return v;
+        }
+
+        public void RegisterCustomAddressLabel(string v)
+        {
+            if (v.StartsWith("@"))
+            {
+                v = v.Substring(1);
+                if (!Regex.IsMatch(v, "^[0-9]*$"))
+                {
+
+
+                    if (!PreDefinedAddressLabels.ContainsKey(v))
+                    {
+                        if (!AddressLabels.ContainsKey(v))
+                        {
+                            AddressLabels.Add(v,CurrentCustomAddress);
+                            CurrentCustomAddress++;
+                        }
+                    }
+                }
+            }
+        
+        }
+
 
         /// <summary>
         /// Decodes the assembly jump instruction
@@ -424,6 +478,39 @@ namespace HackAssembler
             }
 
             return jumpCodeBinary;
+        }
+
+        public List<string> CompileCode(List<string> codeLines)
+        {
+            codeLines = StripCommentsAndEmptyLines(codeLines);
+
+            List<string> parsedLabels = ParseLabelsInCode(codeLines);
+
+            List<string> registeredAddressForLabels = new List<string>();
+
+            for (int i = 0; i < parsedLabels.Count; i++)
+            {
+                registeredAddressForLabels.Add(ConvertAddressLineLabelToAddress(parsedLabels[i]));
+            }
+
+            for (int i = 0; i < registeredAddressForLabels.Count; i++)
+            {
+                RegisterCustomAddressLabel(registeredAddressForLabels[i]);
+            }
+            List<string> addressCoded = new List<string>();
+
+            for (int i = 0; i < registeredAddressForLabels.Count; i++)
+            {
+                addressCoded.Add(ConvertAddressVariablesToAddress(registeredAddressForLabels[i]));
+            }
+            List<string> binaryEncoded = new List<string>();
+            for (int i = 0; i < addressCoded.Count; i++)
+            {
+                binaryEncoded.Add(CompileSingleLineCode(addressCoded[i]));
+
+            }
+           
+            return binaryEncoded;
         }
     }
 }
