@@ -101,6 +101,7 @@ namespace HackAssemblerTest
         [TestCase("0=1", "0", "111111")]
         [TestCase("0=-1", "0", "111010")]
         [TestCase("0=D", "0", "001100")]
+        [TestCase("D", "0", "001100")]
         [TestCase("0=A", "0", "110000")]
         [TestCase("0=M", "1", "110000")]
         [TestCase("0=!D", "0", "001101")]

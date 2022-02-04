@@ -122,7 +122,7 @@ namespace HackAssembler
         public string EncodeCInstruction(string input)
         {
             string ainstructionBinary = "0";
-            string controlBitInstructions = "101010";
+            string controlBitInstructions;
 
             string destcodeBinary = "000";
 
@@ -141,8 +141,8 @@ namespace HackAssembler
                     ainstructionBinary = "1";
                 }
 
-                controlBitInstructions = DecodeControlBitsFromAction(action);
             }
+            controlBitInstructions = DecodeControlBitsFromInstruction(input);
 
             string bytestring = 
                 ainstructionBinary + 
@@ -151,6 +151,24 @@ namespace HackAssembler
                 DecodeJumpInstruction(input);
 
             return bytestring.PadLeft(16,'1');
+        }
+
+        private string DecodeControlBitsFromInstruction(string input)
+        {
+            string action = input.ToLower();
+            int equalsindex = action.IndexOf("=");
+            if (equalsindex != -1)
+            {
+                action = action.Substring(equalsindex + 1).ToLower();
+                
+            }
+            int simicolonIndex = action.IndexOf(";");
+            if(simicolonIndex != -1)
+            {
+                action = action.Substring(0, simicolonIndex);
+
+            }
+            return DecodeControlBitsFromAction(action);
         }
 
         /// <summary>
